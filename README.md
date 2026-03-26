@@ -1,24 +1,38 @@
 # jpeg-to-jxl
 
-Lossless JPEG to JPEG XL transcoding in the browser via WASM.
+JPEG &lt;-&gt; JPEG XL transcoding in the browser via WASM.
 
 **[Live Demo](https://chefjulio.github.io/jpeg-to-jxl/)** -- try it now, no install needed.
 
-**What it does:** Takes a JPEG file, repackages its DCT coefficients into JPEG XL format. The result is ~20% smaller, and the original JPEG can be perfectly reconstructed byte-for-byte.
+**What it does:**
+- **JPEG -> JXL:** Repackages JPEG's DCT coefficients into JXL format. ~20% smaller, byte-perfect reconstruction.
+- **JXL -> JPEG:** Reconstructs the original JPEG if possible, otherwise decodes to pixels and re-encodes as JPEG.
 
-**How it works:** Uses libjxl's `JxlEncoderAddJPEGFrame` API compiled to WebAssembly. No pixel decoding happens -- the transcoding operates directly on the JPEG's compressed data, which is why it's both fast and perfectly reversible.
+**How it works:** Uses libjxl's `JxlEncoderAddJPEGFrame` API compiled to WebAssembly. The JPEG->JXL path operates directly on compressed data (no pixel decoding), which is why it's both fast and perfectly reversible.
+
+## Install
+
+```bash
+npm install jpeg-to-jxl
+```
 
 ## Usage
 
 ```js
-import { jpegToJxl, jxlToJpeg } from 'jpeg-to-jxl';
+import { jpegToJxl, jxlToJpeg, init } from 'jpeg-to-jxl';
 
-// Compress: JPEG -> JXL (~20% smaller)
+// Optional: pre-warm WASM to avoid cold-start latency
+await init();
+
+// JPEG -> JXL (~20% smaller, lossless)
 const jpegBytes = await fetch('photo.jpg').then(r => r.arrayBuffer());
 const jxlBytes = await jpegToJxl(jpegBytes);
 
-// Reconstruct: JXL -> exact original JPEG (byte-identical)
-const originalJpeg = await jxlToJpeg(jxlBytes);
+// JXL -> JPEG (byte-identical if created from JPEG, lossy fallback otherwise)
+const jpegBack = await jxlToJpeg(jxlBytes);
+
+// JXL -> JPEG with custom quality (for lossy fallback path)
+const converted = await jxlToJpeg(someJxlFile, { quality: 85 });
 ```
 
 ## API
@@ -39,7 +53,7 @@ Convert a JXL file to JPEG. Works with **any** JXL file.
 - `options.quality`: `number` (1-100, default 90) -- JPEG quality for lossy fallback path
 - Returns: `Promise<ArrayBuffer>` -- JPEG file bytes
 
-If the JXL was created from a JPEG source (via `jpegToJxl` or `cjxl`), returns the byte-identical original JPEG. Otherwise, decodes to pixels and re-encodes as JPEG via jpegli.
+If the JXL was created from a JPEG source (via `jpegToJxl` or `cjxl`), returns the byte-identical original JPEG. Otherwise, decodes to pixels and re-encodes as JPEG via libjpeg.
 
 ### `init()`
 
@@ -47,9 +61,9 @@ Pre-initialize the WASM module. Call early to avoid cold-start latency on first 
 
 ## Demo
 
-Open `examples/index.html` in a browser (after building) to try it interactively -- drag and drop a JPEG, see the compression ratio, download the JXL, and verify byte-identical reconstruction. Everything runs client-side via WebAssembly.
+The [live demo](https://chefjulio.github.io/jpeg-to-jxl/) supports both directions -- drop a JPEG or JXL file and convert. Runs entirely client-side via WebAssembly.
 
-To run the demo locally:
+To run locally:
 
 ```bash
 # Build first (or download dist/ from CI artifacts)
@@ -81,14 +95,14 @@ bash build/build.sh
 ```
 
 Output goes to `dist/`:
-- `transcode.wasm` -- the WASM binary
+- `transcode.wasm` -- the WASM binary (~2.7 MB, ~1.05 MB gzipped)
 - `transcode.js` -- Emscripten glue code
 - `index.js` -- JS API wrapper
 - `index.d.ts` -- TypeScript types
 
 ### CI
 
-Push to GitHub and the WASM builds automatically via GitHub Actions. Download the artifact from the Actions tab.
+Push to GitHub and the WASM builds automatically via GitHub Actions. Tag a version (`git tag v0.x.0 && git push origin v0.x.0`) to auto-publish to npm.
 
 ## How is this different from @jsquash/jxl?
 
