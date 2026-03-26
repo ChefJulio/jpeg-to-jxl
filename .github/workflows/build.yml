@@ -55,9 +55,22 @@ jobs:
           mkdir -p test/fixtures
           python3 -c "
           from PIL import Image
-          img = Image.new('RGB', (64, 64), (255, 0, 0))
+          import random
+          # Generate a 512x512 image with realistic noise (not solid color)
+          # so JPEG produces a non-trivial file where JXL savings are visible
+          random.seed(42)
+          img = Image.new('RGB', (512, 512))
+          pixels = img.load()
+          for y in range(512):
+              for x in range(512):
+                  r = min(255, max(0, x // 2 + random.randint(-20, 20)))
+                  g = min(255, max(0, y // 2 + random.randint(-20, 20)))
+                  b = min(255, max(0, (x + y) // 4 + random.randint(-20, 20)))
+                  pixels[x, y] = (r, g, b)
           img.save('test/fixtures/sample.jpg', 'JPEG', quality=90)
-          print('Created 64x64 test JPEG')
+          import os
+          size = os.path.getsize('test/fixtures/sample.jpg')
+          print(f'Created 512x512 test JPEG: {size} bytes')
           "
 
       - name: Run tests
