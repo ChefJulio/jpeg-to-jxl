@@ -38,14 +38,6 @@ set(HWY_SYSTEM_GTEST OFF CACHE BOOL "" FORCE)
 set(HWY_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-# --- LTO: whole-program dead code elimination ---
-# libjxl compiles a full pixel encoder + decoder, but we only call the
-# JPEG transcode path. LTO lets LLVM strip every unreachable function
-# across all translation units -- no need to fork libjxl.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-
 add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 
 # --- Our WASM glue ---
@@ -63,7 +55,10 @@ target_include_directories(transcode PRIVATE
 # ALLOW_MEMORY_GROWTH: heap grows for large images
 # MALLOC=emmalloc: smaller allocator (we don't need full dlmalloc)
 # SINGLE_FILE=0: keep .wasm separate for lazy loading / caching
-# -Oz + -flto: optimize for size with whole-program dead code elimination
+# -Oz: optimize for size (transcoding is fast enough, minimize download)
+# Note: -flto was tested but made output ~115KB larger due to aggressive
+# inlining across modules. Emscripten already does WASM-level DCE based
+# on EXPORTED_FUNCTIONS, so LTO adds no benefit here.
 set_target_properties(transcode PROPERTIES
   SUFFIX ".js"
   LINK_FLAGS "\
@@ -80,7 +75,6 @@ set_target_properties(transcode PROPERTIES
     -s MALLOC=emmalloc \
     -s USE_PTHREADS=0 \
     -Oz \
-    -flto \
     --closure 1 \
   "
 )
