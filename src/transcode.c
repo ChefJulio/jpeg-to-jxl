@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <jxl/encode.h>
 #include <jxl/decode.h>
 #include <jpeglib.h>
