@@ -1,0 +1,58 @@
+name: Build WASM
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone libjxl
+        run: |
+          git clone --depth 1 --recursive https://github.com/libjxl/libjxl.git deps/libjxl
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.51
+
+      - name: Verify Emscripten
+        run: emcc --version
+
+      - name: Build WASM
+        run: bash build/build.sh
+
+      - name: Show output sizes
+        run: |
+          ls -la dist/
+          echo ""
+          echo "WASM size: $(wc -c < dist/transcode.wasm) bytes"
+          echo "WASM gzipped: $(gzip -c dist/transcode.wasm | wc -c) bytes"
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpeg-to-jxl-dist
+          path: dist/
+          retention-days: 30
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create test fixture
+        run: |
+          # Generate a minimal test JPEG using ImageMagick (pre-installed on ubuntu-latest)
+          convert -size 64x64 xc:red -quality 90 test/fixtures/sample.jpg
+
+      - name: Run tests
+        run: node --test test/round-trip.test.js

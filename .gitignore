@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/out/
+deps/
+test/fixtures/*.jpg
+test/fixtures/*.jxl
+*.wasm
