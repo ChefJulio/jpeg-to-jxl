@@ -65,8 +65,13 @@ fi
 
 if [ -n "$WASM_OPT" ]; then
   BEFORE=$(wc -c < "$DIST_DIR/transcode.wasm")
-  echo "==> Running wasm-opt -Oz ($(basename "$WASM_OPT"))..."
-  "$WASM_OPT" -Oz "$DIST_DIR/transcode.wasm" -o "$DIST_DIR/transcode.wasm"
+  echo "==> Running wasm-opt -Oz ($("$WASM_OPT" --version 2>&1 || true))..."
+  "$WASM_OPT" -Oz \
+    --enable-bulk-memory \
+    --enable-sign-ext \
+    --enable-mutable-globals \
+    --enable-nontrapping-float-to-int \
+    "$DIST_DIR/transcode.wasm" -o "$DIST_DIR/transcode.wasm"
   AFTER=$(wc -c < "$DIST_DIR/transcode.wasm")
   echo "    wasm-opt: $BEFORE -> $AFTER bytes (saved $((BEFORE - AFTER)) bytes)"
 else
