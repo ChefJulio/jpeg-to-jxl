@@ -44,8 +44,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 set(ENABLE_SHARED OFF CACHE BOOL "" FORCE)
 set(ENABLE_STATIC ON CACHE BOOL "" FORCE)
 set(WITH_TURBOJPEG OFF CACHE BOOL "" FORCE)
+set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS "" CACHE STRING "" FORCE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl/third_party/libjpeg-turbo
-                 ${CMAKE_BINARY_DIR}/libjpeg-turbo)
+                 ${CMAKE_BINARY_DIR}/libjpeg-turbo EXCLUDE_FROM_ALL)
 
 # --- Our WASM glue ---
 add_executable(transcode ${CMAKE_SOURCE_DIR}/../src/transcode.c)
