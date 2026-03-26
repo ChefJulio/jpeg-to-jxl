@@ -53,11 +53,20 @@ cp "$PROJECT_DIR/src/index.js" "$DIST_DIR/"
 cp "$PROJECT_DIR/src/index.d.ts" "$DIST_DIR/"
 
 # --- wasm-opt pass (binaryen) ---
-# Squeezes out another 5-15% on top of Emscripten's -Oz
-if command -v wasm-opt &> /dev/null; then
+# Squeezes out another 5-15% on top of Emscripten's -Oz.
+# Prefer Emscripten's bundled wasm-opt (matches the WASM features it emits)
+# over the system one (which may be too old for bulk-memory etc.).
+WASM_OPT=""
+if [ -n "${EMSDK:-}" ] && [ -x "$EMSDK/upstream/bin/wasm-opt" ]; then
+  WASM_OPT="$EMSDK/upstream/bin/wasm-opt"
+elif command -v wasm-opt &> /dev/null; then
+  WASM_OPT="wasm-opt"
+fi
+
+if [ -n "$WASM_OPT" ]; then
   BEFORE=$(wc -c < "$DIST_DIR/transcode.wasm")
-  echo "==> Running wasm-opt -Oz..."
-  wasm-opt -Oz "$DIST_DIR/transcode.wasm" -o "$DIST_DIR/transcode.wasm"
+  echo "==> Running wasm-opt -Oz ($(basename "$WASM_OPT"))..."
+  "$WASM_OPT" -Oz "$DIST_DIR/transcode.wasm" -o "$DIST_DIR/transcode.wasm"
   AFTER=$(wc -c < "$DIST_DIR/transcode.wasm")
   echo "    wasm-opt: $BEFORE -> $AFTER bytes (saved $((BEFORE - AFTER)) bytes)"
 else

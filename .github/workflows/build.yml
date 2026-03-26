@@ -27,11 +27,6 @@ jobs:
       - name: Verify Emscripten
         run: emcc --version
 
-      - name: Install binaryen (wasm-opt)
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq binaryen
-
       - name: Build WASM
         run: bash build/build.sh
 

@@ -15,7 +15,6 @@
 #include <string.h>
 #include <jxl/encode.h>
 #include <jxl/decode.h>
-#include <jxl/thread_parallel_runner.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
