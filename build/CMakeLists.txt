@@ -15,13 +15,12 @@ set(JPEGXL_ENABLE_BENCHMARK OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_DOXYGEN OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_JNI OFF CACHE BOOL "" FORCE)
-set(JPEGXL_ENABLE_JPEGLI ON CACHE BOOL "" FORCE)
-set(JPEGXL_ENABLE_JPEGLI_LIBJPEG ON CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_JPEGLI OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_MANPAGES OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_OPENEXR OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_PLUGINS OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_SJPEG OFF CACHE BOOL "" FORCE)
-set(JPEGXL_ENABLE_SKCMS ON CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_SKCMS OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_VIEWERS OFF CACHE BOOL "" FORCE)
 # We need the encoder and decoder with JPEG transcoding
@@ -41,23 +40,24 @@ set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 
+# --- libjpeg-turbo for JPEG encoding (used by jxl_to_jpeg_lossy) ---
+set(ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+set(ENABLE_STATIC ON CACHE BOOL "" FORCE)
+set(WITH_TURBOJPEG OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl/third_party/libjpeg-turbo
+                 ${CMAKE_BINARY_DIR}/libjpeg-turbo)
+
 # --- Our WASM glue ---
 add_executable(transcode ${CMAKE_SOURCE_DIR}/../src/transcode.c)
 
-# Print available jpegli/jpeg targets for debugging
-message(STATUS "Looking for jpegli/jpeg targets...")
-foreach(target_name jpegli-static jpegli jpegli_static jpegli_enc jpegli_dec jpeg-static jpeg jpegli-internal)
-  if(TARGET ${target_name})
-    message(STATUS "  Found target: ${target_name}")
-  endif()
-endforeach()
-
-target_link_libraries(transcode PRIVATE jxl jxl_dec jpegli-static)
+target_link_libraries(transcode PRIVATE jxl jxl_dec jpeg-static)
 
 target_include_directories(transcode PRIVATE
   ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include
   ${CMAKE_BINARY_DIR}/libjxl/lib/include  # For generated jxl/version.h
-  ${CMAKE_BINARY_DIR}/libjxl/lib/include/jpegli  # jpeglib.h, jconfig.h, jmorecfg.h
+  # libjpeg-turbo headers (jpeglib.h from source, jconfig.h generated in build dir)
+  ${CMAKE_SOURCE_DIR}/../deps/libjxl/third_party/libjpeg-turbo
+  ${CMAKE_BINARY_DIR}/libjpeg-turbo
 )
 
 # --- Emscripten link flags ---
