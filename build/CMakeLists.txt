@@ -27,9 +27,12 @@ set(JPEGXL_ENABLE_VIEWERS OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_TRANSCODE_JPEG ON CACHE BOOL "" FORCE)
 
 # --- Threading: force single-threaded ---
-# No pthreads in WASM = no SharedArrayBuffer/COOP/COEP requirements
+# No pthreads in WASM = no SharedArrayBuffer/COOP/COEP requirements.
+# libjxl calls find_package(Threads REQUIRED) so we can't disable it --
+# instead we satisfy the find but don't actually link pthreads.
+set(THREADS_PREFER_PTHREAD_FLAG OFF CACHE BOOL "" FORCE)
+set(CMAKE_USE_PTHREADS_INIT OFF CACHE BOOL "" FORCE)
 set(JPEGXL_FORCE_NEON OFF CACHE BOOL "" FORCE)
-set(CMAKE_DISABLE_FIND_PACKAGE_Threads TRUE)
 set(HWY_ENABLE_THREADS OFF CACHE BOOL "" FORCE)
 set(HWY_SYSTEM_GTEST OFF CACHE BOOL "" FORCE)
 set(HWY_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
