@@ -71,6 +71,7 @@ if [ -n "$WASM_OPT" ]; then
     --enable-sign-ext \
     --enable-mutable-globals \
     --enable-nontrapping-float-to-int \
+    --enable-threads \
     "$DIST_DIR/transcode.wasm" -o "$DIST_DIR/transcode.wasm"
   AFTER=$(wc -c < "$DIST_DIR/transcode.wasm")
   echo "    wasm-opt: $BEFORE -> $AFTER bytes (saved $((BEFORE - AFTER)) bytes)"
