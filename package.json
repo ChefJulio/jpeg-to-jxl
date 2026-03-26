@@ -1,6 +1,6 @@
 {
   "name": "jpeg-to-jxl",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lossless JPEG to JPEG XL transcoding via WASM. ~20% smaller files with byte-perfect JPEG reconstruction.",
   "type": "module",
   "main": "dist/index.js",
