@@ -53,7 +53,7 @@ set_target_properties(transcode PROPERTIES
     -s ALLOW_MEMORY_GROWTH=1 \
     -s INITIAL_MEMORY=16777216 \
     -s STACK_SIZE=1048576 \
-    -s ENVIRONMENT='web,worker' \
+    -s ENVIRONMENT='web,worker,node' \
     -s FILESYSTEM=0 \
     -s SINGLE_FILE=0 \
     -O3 \
