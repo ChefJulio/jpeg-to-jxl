@@ -52,6 +52,18 @@ cp "$BUILD_DIR/transcode.wasm" "$DIST_DIR/"
 cp "$PROJECT_DIR/src/index.js" "$DIST_DIR/"
 cp "$PROJECT_DIR/src/index.d.ts" "$DIST_DIR/"
 
+# --- wasm-opt pass (binaryen) ---
+# Squeezes out another 5-15% on top of Emscripten's -Oz
+if command -v wasm-opt &> /dev/null; then
+  BEFORE=$(wc -c < "$DIST_DIR/transcode.wasm")
+  echo "==> Running wasm-opt -Oz..."
+  wasm-opt -Oz "$DIST_DIR/transcode.wasm" -o "$DIST_DIR/transcode.wasm"
+  AFTER=$(wc -c < "$DIST_DIR/transcode.wasm")
+  echo "    wasm-opt: $BEFORE -> $AFTER bytes (saved $((BEFORE - AFTER)) bytes)"
+else
+  echo "==> wasm-opt not found, skipping (install binaryen for smaller WASM)"
+fi
+
 echo ""
 echo "==> Build complete!"
 echo "    dist/transcode.wasm  (WASM binary)"
@@ -59,7 +71,8 @@ echo "    dist/transcode.js    (Emscripten glue)"
 echo "    dist/index.js        (API wrapper)"
 echo "    dist/index.d.ts      (TypeScript types)"
 
-# Print WASM size
+# Print final sizes
 WASM_SIZE=$(wc -c < "$DIST_DIR/transcode.wasm" 2>/dev/null || echo "unknown")
+GZIP_SIZE=$(gzip -c "$DIST_DIR/transcode.wasm" 2>/dev/null | wc -c || echo "unknown")
 echo ""
-echo "    WASM size: $WASM_SIZE bytes"
+echo "    WASM size: $WASM_SIZE bytes ($GZIP_SIZE gzipped)"

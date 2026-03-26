@@ -27,6 +27,11 @@ jobs:
       - name: Verify Emscripten
         run: emcc --version
 
+      - name: Install binaryen (wasm-opt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq binaryen
+
       - name: Build WASM
         run: bash build/build.sh
 
@@ -34,14 +39,28 @@ jobs:
         run: |
           ls -la dist/
           echo ""
-          echo "WASM size: $(wc -c < dist/transcode.wasm) bytes"
-          echo "WASM gzipped: $(gzip -c dist/transcode.wasm | wc -c) bytes"
+          WASM_RAW=$(wc -c < dist/transcode.wasm)
+          WASM_GZ=$(gzip -c dist/transcode.wasm | wc -c)
+          JS_RAW=$(wc -c < dist/transcode.js)
+          echo "=== Build Size Report ==="
+          echo "transcode.wasm: $WASM_RAW bytes ($WASM_GZ gzipped)"
+          echo "transcode.js:   $JS_RAW bytes"
+          echo "Total payload:  $((WASM_RAW + JS_RAW)) bytes raw"
 
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: jpeg-to-jxl-dist
           path: dist/
+          retention-days: 30
+
+      - name: Upload demo page
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpeg-to-jxl-demo
+          path: |
+            examples/
+            dist/
           retention-days: 30
 
       - name: Setup Node

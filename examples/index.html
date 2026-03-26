@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jpeg-to-jxl Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e0e0e8;
+      --text-dim: #6e6e82;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.12);
+      --red: #ef4444;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      margin-bottom: 40px;
+    }
+
+    /* Drop zone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 56px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface);
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .dropzone-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .dropzone-text {
+      font-size: 1.05rem;
+      color: var(--text-dim);
+    }
+
+    .dropzone-text strong {
+      color: var(--accent);
+    }
+
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* Results */
+    .results {
+      display: none;
+      margin-top: 32px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .results.visible { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    /* Size comparison bar */
+    .size-compare {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .size-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .size-label {
+      width: 48px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .size-bar-track {
+      flex: 1;
+      height: 28px;
+      background: var(--bg);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .size-bar {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .size-bar.jpeg { background: var(--text-dim); width: 100%; }
+    .size-bar.jxl { background: var(--accent); }
+
+    .savings-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--green-dim);
+      color: var(--green);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    /* Stats grid */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 12px 8px;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* Round-trip verification */
+    .verify {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .verify.success {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .verify.fail {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .verify-icon { font-size: 1.2rem; }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover { filter: brightness(1.15); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover { border-color: var(--text-dim); background: var(--surface); }
+
+    /* Status/spinner */
+    .status {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-dim);
+      display: none;
+    }
+
+    .status.visible { display: block; }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--red);
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .error.visible { display: block; }
+
+    /* Footer */
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* Effort control */
+    .effort-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .effort-control label {
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .effort-control input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+
+    .effort-value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 16px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span>jpeg-to-jxl</span> demo</h1>
+    <p class="subtitle">
+      Lossless JPEG to JPEG XL transcoding in the browser. ~20% smaller, byte-perfect reconstruction.
+    </p>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dropzone-icon">&#x1F5BC;</div>
+      <div class="dropzone-text">
+        <strong>Drop a JPEG</strong> or click to select
+      </div>
+      <input type="file" accept=".jpg,.jpeg,image/jpeg" id="fileInput">
+    </div>
+
+    <div class="effort-control">
+      <label for="effort">Effort:</label>
+      <input type="range" id="effort" min="1" max="9" value="3">
+      <span class="effort-value" id="effortValue">3</span>
+      <span style="color: var(--text-dim)">
+        <span id="effortHint">balanced</span>
+      </span>
+    </div>
+
+    <div class="status" id="status">
+      <div class="spinner"></div>
+      <div id="statusText">Initializing WASM module...</div>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div class="results" id="results">
+      <div class="card">
+        <div class="card-title">Compression</div>
+        <div class="size-compare">
+          <div class="size-row">
+            <span class="size-label">JPEG</span>
+            <div class="size-bar-track">
+              <div class="size-bar jpeg" id="jpegBar"></div>
+            </div>
+          </div>
+          <div class="size-row">
+            <span class="size-label">JXL</span>
+            <div class="size-bar-track">
+              <div class="size-bar jxl" id="jxlBar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="savings-badge" id="savingsBadge"></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="statOriginal">--</div>
+          <div class="stat-label">Original</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statCompressed">--</div>
+          <div class="stat-label">JXL</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statTime">--</div>
+          <div class="stat-label">Time</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 16px">
+        <div class="card-title">Round-trip verification</div>
+        <div id="verifyResult"></div>
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-primary" id="downloadJxl">Download .jxl</a>
+        <a class="btn btn-outline" id="downloadReconstructed">Download reconstructed .jpg</a>
+        <button class="btn btn-outline" id="resetBtn">Try another</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="https://github.com/ChefJulio/jpeg-to-jxl">github.com/ChefJulio/jpeg-to-jxl</a>
+      &middot; No server, everything runs in your browser via WebAssembly.
+    </div>
+  </div>
+
+  <script type="module">
+    // -- Dynamic import from dist/ (one level up from examples/) --
+    // When served locally: expects ../dist/ to contain the built WASM files
+    // Adjust this path if you're hosting the demo separately.
+    const { jpegToJxl, jxlToJpeg, init } = await import('../dist/index.js');
+
+    const $ = (sel) => document.querySelector(sel);
+    const dropzone = $('#dropzone');
+    const fileInput = $('#fileInput');
+    const effortSlider = $('#effort');
+    const effortValue = $('#effortValue');
+    const effortHint = $('#effortHint');
+    const status = $('#status');
+    const statusText = $('#statusText');
+    const error = $('#error');
+    const results = $('#results');
+
+    const EFFORT_HINTS = {
+      1: 'fastest', 2: 'fast', 3: 'balanced', 4: 'balanced',
+      5: 'thorough', 6: 'thorough', 7: 'slow', 8: 'slower', 9: 'max compression'
+    };
+
+    // -- Effort slider --
+    effortSlider.addEventListener('input', () => {
+      effortValue.textContent = effortSlider.value;
+      effortHint.textContent = EFFORT_HINTS[effortSlider.value];
+    });
+
+    // -- Drag and drop --
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) handleFile(fileInput.files[0]);
+    });
+
+    $('#resetBtn').addEventListener('click', () => {
+      results.classList.remove('visible');
+      error.classList.remove('visible');
+      dropzone.style.display = '';
+      fileInput.value = '';
+    });
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function showStatus(msg) {
+      status.classList.add('visible');
+      statusText.textContent = msg;
+    }
+
+    function hideStatus() {
+      status.classList.remove('visible');
+    }
+
+    function showError(msg) {
+      error.textContent = msg;
+      error.classList.add('visible');
+      hideStatus();
+    }
+
+    async function handleFile(file) {
+      if (!file.type.match(/^image\/jpe?g$/)) {
+        showError('Please select a JPEG file.');
+        return;
+      }
+
+      error.classList.remove('visible');
+      results.classList.remove('visible');
+      dropzone.style.display = 'none';
+
+      const effort = parseInt(effortSlider.value);
+
+      try {
+        showStatus('Initializing WASM module...');
+        await init();
+
+        showStatus('Reading file...');
+        const jpegData = await file.arrayBuffer();
+
+        showStatus('Transcoding JPEG to JXL...');
+        const t0 = performance.now();
+        const jxlData = await jpegToJxl(jpegData, { effort });
+        const encodeTime = performance.now() - t0;
+
+        showStatus('Reconstructing JPEG from JXL...');
+        const t1 = performance.now();
+        const reconstructed = await jxlToJpeg(jxlData);
+        const decodeTime = performance.now() - t1;
+
+        hideStatus();
+
+        // -- Populate results --
+        const jpegSize = jpegData.byteLength;
+        const jxlSize = jxlData.byteLength;
+        const savings = ((1 - jxlSize / jpegSize) * 100).toFixed(1);
+        const ratio = (jxlSize / jpegSize * 100).toFixed(0);
+
+        $('#jpegBar').style.width = '100%';
+        $('#jpegBar').textContent = formatBytes(jpegSize);
+        $('#jxlBar').style.width = ratio + '%';
+        $('#jxlBar').textContent = formatBytes(jxlSize);
+
+        $('#savingsBadge').textContent = savings + '% smaller';
+
+        $('#statOriginal').textContent = formatBytes(jpegSize);
+        $('#statCompressed').textContent = formatBytes(jxlSize);
+        $('#statTime').textContent = Math.round(encodeTime) + 'ms';
+
+        // -- Verify round-trip --
+        const originalBytes = new Uint8Array(jpegData);
+        const rebuiltBytes = new Uint8Array(reconstructed);
+        let identical = originalBytes.length === rebuiltBytes.length;
+        if (identical) {
+          for (let i = 0; i < originalBytes.length; i++) {
+            if (originalBytes[i] !== rebuiltBytes[i]) {
+              identical = false;
+              break;
+            }
+          }
+        }
+
+        const verifyEl = $('#verifyResult');
+        if (identical) {
+          verifyEl.className = 'verify success';
+          verifyEl.innerHTML = `<span class="verify-icon">&#x2713;</span>
+            Byte-identical reconstruction verified (${formatBytes(reconstructed.byteLength)}, ${Math.round(decodeTime)}ms)`;
+        } else {
+          verifyEl.className = 'verify fail';
+          verifyEl.innerHTML = `<span class="verify-icon">&#x2717;</span>
+            Reconstruction mismatch! Original: ${jpegSize} bytes, Rebuilt: ${reconstructed.byteLength} bytes`;
+        }
+
+        // -- Download links --
+        const baseName = file.name.replace(/\.jpe?g$/i, '');
+
+        const jxlBlob = new Blob([jxlData], { type: 'image/jxl' });
+        const jxlUrl = URL.createObjectURL(jxlBlob);
+        const dlJxl = $('#downloadJxl');
+        dlJxl.href = jxlUrl;
+        dlJxl.download = baseName + '.jxl';
+
+        const jpgBlob = new Blob([reconstructed], { type: 'image/jpeg' });
+        const jpgUrl = URL.createObjectURL(jpgBlob);
+        const dlJpg = $('#downloadReconstructed');
+        dlJpg.href = jpgUrl;
+        dlJpg.download = baseName + '-reconstructed.jpg';
+
+        results.classList.add('visible');
+
+      } catch (err) {
+        showError(err.message || 'Transcoding failed.');
+        dropzone.style.display = '';
+      }
+    }
+  </script>
+</body>
+</html>

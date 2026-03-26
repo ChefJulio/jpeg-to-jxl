@@ -9,12 +9,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 # --- libjxl as a subdirectory build ---
-# Disable parts we don't need to speed up compilation
+# Disable everything we don't need -- every flag matters for WASM size
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_BENCHMARK OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_DOXYGEN OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_JNI OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_JPEGLI OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_MANPAGES OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_OPENEXR OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_PLUGINS OFF CACHE BOOL "" FORCE)
@@ -22,8 +23,17 @@ set(JPEGXL_ENABLE_SJPEG OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_SKCMS OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_VIEWERS OFF CACHE BOOL "" FORCE)
-# We need the encoder and decoder
+# We need the encoder and decoder with JPEG transcoding
 set(JPEGXL_ENABLE_TRANSCODE_JPEG ON CACHE BOOL "" FORCE)
+
+# --- Threading: force single-threaded ---
+# No pthreads in WASM = no SharedArrayBuffer/COOP/COEP requirements
+set(JPEGXL_FORCE_NEON OFF CACHE BOOL "" FORCE)
+set(CMAKE_DISABLE_FIND_PACKAGE_Threads TRUE)
+set(HWY_ENABLE_THREADS OFF CACHE BOOL "" FORCE)
+set(HWY_SYSTEM_GTEST OFF CACHE BOOL "" FORCE)
+set(HWY_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 
@@ -38,11 +48,11 @@ target_include_directories(transcode PRIVATE
 )
 
 # --- Emscripten link flags ---
-# MODULARIZE: wraps output in a factory function (required for ES module usage)
-# EXPORT_ES6: emit ES6 module syntax
-# EXPORTED_FUNCTIONS: expose our C functions to JS
-# ALLOW_MEMORY_GROWTH: heap can grow (images vary in size)
-# SINGLE_FILE=0: keep .wasm separate (better for lazy loading / caching)
+# MODULARIZE + EXPORT_ES6: ES module factory function
+# ALLOW_MEMORY_GROWTH: heap grows for large images
+# MALLOC=emmalloc: smaller allocator (we don't need full dlmalloc)
+# SINGLE_FILE=0: keep .wasm separate for lazy loading / caching
+# -Oz: optimize for size (transcoding is fast enough, minimize download)
 set_target_properties(transcode PROPERTIES
   SUFFIX ".js"
   LINK_FLAGS "\
@@ -56,7 +66,9 @@ set_target_properties(transcode PROPERTIES
     -s ENVIRONMENT='web,worker,node' \
     -s FILESYSTEM=0 \
     -s SINGLE_FILE=0 \
-    -O3 \
+    -s MALLOC=emmalloc \
+    -s USE_PTHREADS=0 \
+    -Oz \
     --closure 1 \
   "
 )

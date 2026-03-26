@@ -41,6 +41,21 @@ Reconstruct the original JPEG from a JXL file.
 
 Pre-initialize the WASM module. Call early to avoid cold-start latency on first use.
 
+## Demo
+
+Open `examples/index.html` in a browser (after building) to try it interactively -- drag and drop a JPEG, see the compression ratio, download the JXL, and verify byte-identical reconstruction. Everything runs client-side via WebAssembly.
+
+To run the demo locally:
+
+```bash
+# Build first (or download dist/ from CI artifacts)
+bash build/build.sh
+
+# Serve with any static server (needed for ES module imports)
+npx serve .
+# Then open http://localhost:3000/examples/
+```
+
 ## Building from source
 
 ### Prerequisites
