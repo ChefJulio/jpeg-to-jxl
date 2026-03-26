@@ -48,8 +48,7 @@ target_link_libraries(transcode PRIVATE jxl jxl_dec jpegli-static)
 target_include_directories(transcode PRIVATE
   ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include
   ${CMAKE_BINARY_DIR}/libjxl/lib/include  # For generated jxl/version.h
-  ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/jpegli  # For jpeglib.h via jpegli
-  ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include/jpegli  # Alternate header location
+  ${CMAKE_BINARY_DIR}/libjxl/lib/include/jpegli  # For jpeglib.h (copied by jpegli.cmake)
 )
 
 # --- Emscripten link flags ---
