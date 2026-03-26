@@ -1,20 +1,17 @@
 /*
- * jpeg-to-jxl: Lossless JPEG <-> JXL transcoding via libjxl
+ * jpeg-to-jxl: JPEG <-> JXL transcoding via libjxl
  *
- * This is the C glue that exposes JxlEncoderAddJPEGFrame and the reverse
- * JxlDecoderSetJPEGBuffer path as simple byte-buffer functions callable
- * from JavaScript via Emscripten.
- *
- * The key insight: libjxl can repackage JPEG's DCT coefficients into JXL's
- * more efficient container WITHOUT decoding to pixels. This gives ~20% size
- * reduction while preserving the ability to reconstruct the exact original
- * JPEG byte-for-byte.
+ * Three conversion paths:
+ * 1. jpeg_to_jxl:       JPEG -> JXL lossless transcode (~20% smaller, reversible)
+ * 2. jxl_to_jpeg:        JXL -> JPEG byte-perfect reconstruction (requires metadata)
+ * 3. jxl_to_jpeg_lossy: JXL -> pixels -> JPEG re-encode via jpegli (any JXL file)
  */
 
 #include <stdlib.h>
 #include <string.h>
 #include <jxl/encode.h>
 #include <jxl/decode.h>
+#include <jpeglib.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -230,6 +227,137 @@ uint8_t* jxl_to_jpeg(const uint8_t* jxl_data, size_t jxl_size,
       default: {
         /* Error or unsupported event */
         free(jpeg_buf);
+        JxlDecoderDestroy(dec);
+        return NULL;
+      }
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * JXL -> JPEG (lossy re-encode via pixel decoding + jpegli)
+ *
+ * Works with ANY JXL file -- decodes to pixels, then re-encodes as JPEG.
+ * Unlike jxl_to_jpeg, this does NOT produce a byte-identical JPEG.
+ * Use this as a fallback when the JXL lacks JPEG reconstruction metadata.
+ *
+ * quality: JPEG quality 1-100 (default 90 if out of range)
+ * -------------------------------------------------------------------------- */
+EXPORT
+uint8_t* jxl_to_jpeg_lossy(const uint8_t* jxl_data, size_t jxl_size,
+                            size_t* out_size, int quality) {
+  *out_size = 0;
+
+  if (!jxl_data || jxl_size == 0) return NULL;
+  if (quality < 1 || quality > 100) quality = 90;
+
+  JxlDecoder* dec = JxlDecoderCreate(NULL);
+  if (!dec) return NULL;
+
+  if (JXL_DEC_SUCCESS != JxlDecoderSubscribeEvents(dec,
+      JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE)) {
+    JxlDecoderDestroy(dec);
+    return NULL;
+  }
+
+  if (JXL_DEC_SUCCESS != JxlDecoderSetInput(dec, jxl_data, jxl_size)) {
+    JxlDecoderDestroy(dec);
+    return NULL;
+  }
+  JxlDecoderCloseInput(dec);
+
+  JxlBasicInfo info;
+  uint8_t* pixels = NULL;
+  JxlPixelFormat format = { 3, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0 };
+
+  for (;;) {
+    JxlDecoderStatus status = JxlDecoderProcessInput(dec);
+
+    switch (status) {
+      case JXL_DEC_BASIC_INFO: {
+        if (JXL_DEC_SUCCESS != JxlDecoderGetBasicInfo(dec, &info)) {
+          JxlDecoderDestroy(dec);
+          return NULL;
+        }
+        break;
+      }
+
+      case JXL_DEC_NEED_IMAGE_OUT_BUFFER: {
+        size_t pixel_buf_size;
+        if (JXL_DEC_SUCCESS != JxlDecoderImageOutBufferSize(dec, &format,
+            &pixel_buf_size)) {
+          JxlDecoderDestroy(dec);
+          return NULL;
+        }
+        pixels = (uint8_t*)malloc(pixel_buf_size);
+        if (!pixels) {
+          JxlDecoderDestroy(dec);
+          return NULL;
+        }
+        if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec, &format,
+            pixels, pixel_buf_size)) {
+          free(pixels);
+          JxlDecoderDestroy(dec);
+          return NULL;
+        }
+        break;
+      }
+
+      case JXL_DEC_FULL_IMAGE: {
+        /* Pixels decoded, now encode as JPEG via jpegli */
+        break;
+      }
+
+      case JXL_DEC_SUCCESS: {
+        JxlDecoderDestroy(dec);
+
+        if (!pixels) return NULL;
+
+        /* Encode pixels to JPEG using jpegli */
+        struct jpeg_compress_struct cinfo;
+        struct jpeg_error_mgr jerr;
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_compress(&cinfo);
+
+        uint8_t* jpeg_buf = NULL;
+        unsigned long jpeg_size_out = 0;
+        jpeg_mem_dest(&cinfo, &jpeg_buf, &jpeg_size_out);
+
+        cinfo.image_width = info.xsize;
+        cinfo.image_height = info.ysize;
+        cinfo.input_components = 3;
+        cinfo.in_color_space = JCS_RGB;
+
+        jpeg_set_defaults(&cinfo);
+        jpeg_set_quality(&cinfo, quality, TRUE);
+        jpeg_start_compress(&cinfo, TRUE);
+
+        size_t row_stride = info.xsize * 3;
+        JSAMPROW row_pointer[1];
+        while (cinfo.next_scanline < cinfo.image_height) {
+          row_pointer[0] = &pixels[cinfo.next_scanline * row_stride];
+          jpeg_write_scanlines(&cinfo, row_pointer, 1);
+        }
+
+        jpeg_finish_compress(&cinfo);
+        jpeg_destroy_compress(&cinfo);
+        free(pixels);
+
+        /* Copy to our own buffer (jpeg_mem_dest uses libjpeg's allocator) */
+        uint8_t* result = (uint8_t*)malloc(jpeg_size_out);
+        if (!result) {
+          free(jpeg_buf);
+          return NULL;
+        }
+        memcpy(result, jpeg_buf, jpeg_size_out);
+        free(jpeg_buf);
+
+        *out_size = (size_t)jpeg_size_out;
+        return result;
+      }
+
+      default: {
+        if (pixels) free(pixels);
         JxlDecoderDestroy(dec);
         return NULL;
       }

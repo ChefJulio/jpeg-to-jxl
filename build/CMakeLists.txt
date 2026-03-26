@@ -15,7 +15,7 @@ set(JPEGXL_ENABLE_BENCHMARK OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_DOXYGEN OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_JNI OFF CACHE BOOL "" FORCE)
-set(JPEGXL_ENABLE_JPEGLI OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_JPEGLI ON CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_MANPAGES OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_OPENEXR OFF CACHE BOOL "" FORCE)
 set(JPEGXL_ENABLE_PLUGINS OFF CACHE BOOL "" FORCE)
@@ -43,11 +43,13 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 # --- Our WASM glue ---
 add_executable(transcode ${CMAKE_SOURCE_DIR}/../src/transcode.c)
 
-target_link_libraries(transcode PRIVATE jxl jxl_dec)
+target_link_libraries(transcode PRIVATE jxl jxl_dec jpegli-static)
 
 target_include_directories(transcode PRIVATE
   ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include
   ${CMAKE_BINARY_DIR}/libjxl/lib/include  # For generated jxl/version.h
+  ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/jpegli  # For jpeglib.h via jpegli
+  ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include/jpegli  # Alternate header location
 )
 
 # --- Emscripten link flags ---
@@ -64,7 +66,7 @@ set_target_properties(transcode PROPERTIES
   LINK_FLAGS "\
     -s MODULARIZE=1 \
     -s EXPORT_ES6=1 \
-    -s EXPORTED_FUNCTIONS=['_jpeg_to_jxl','_jxl_to_jpeg','_jxl_free','_malloc','_free'] \
+    -s EXPORTED_FUNCTIONS=['_jpeg_to_jxl','_jxl_to_jpeg','_jxl_to_jpeg_lossy','_jxl_free','_malloc','_free'] \
     -s EXPORTED_RUNTIME_METHODS=['HEAPU8','HEAPU32'] \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s INITIAL_MEMORY=16777216 \

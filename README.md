@@ -31,13 +31,15 @@ Lossless JPEG to JXL transcoding.
 - `options.effort`: `number` (1-9, default 3) -- encoding effort. Higher = slower but smaller output.
 - Returns: `Promise<ArrayBuffer>` -- JXL file bytes
 
-### `jxlToJpeg(jxlData)`
+### `jxlToJpeg(jxlData, options?)`
 
-Reconstruct the original JPEG from a JXL file.
+Convert a JXL file to JPEG. Works with **any** JXL file.
 
-- `jxlData`: `ArrayBuffer | Uint8Array` -- JXL file bytes (must contain JPEG reconstruction metadata)
-- Returns: `Promise<ArrayBuffer>` -- original JPEG bytes (byte-identical)
-- Throws if the JXL file was not created from a JPEG source
+- `jxlData`: `ArrayBuffer | Uint8Array` -- JXL file bytes
+- `options.quality`: `number` (1-100, default 90) -- JPEG quality for lossy fallback path
+- Returns: `Promise<ArrayBuffer>` -- JPEG file bytes
+
+If the JXL was created from a JPEG source (via `jpegToJxl` or `cjxl`), returns the byte-identical original JPEG. Otherwise, decodes to pixels and re-encodes as JPEG via jpegli.
 
 ### `init()`
 

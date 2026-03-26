@@ -14,16 +14,19 @@ export declare function jpegToJxl(
 ): Promise<ArrayBuffer>;
 
 /**
- * Reconstruct the original JPEG from a JXL file.
+ * Convert a JXL file to JPEG.
  *
- * Only works with JXL files containing JPEG reconstruction metadata.
- * Output is byte-identical to the original JPEG.
+ * If the JXL contains JPEG reconstruction metadata (created via jpegToJxl
+ * or cjxl), returns the byte-identical original JPEG.
+ * Otherwise, decodes to pixels and re-encodes as JPEG via jpegli.
  *
- * @param jxlData - JXL file bytes (must contain JPEG reconstruction data)
- * @returns Original JPEG bytes (byte-identical)
+ * @param jxlData - JXL file bytes
+ * @param options.quality - JPEG quality 1-100 (default: 90, only used for lossy fallback)
+ * @returns JPEG file bytes
  */
 export declare function jxlToJpeg(
-  jxlData: ArrayBuffer | Uint8Array
+  jxlData: ArrayBuffer | Uint8Array,
+  options?: { quality?: number }
 ): Promise<ArrayBuffer>;
 
 /**
