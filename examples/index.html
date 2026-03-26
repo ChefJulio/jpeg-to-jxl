@@ -432,10 +432,15 @@
   </div>
 
   <script type="module">
-    // -- Dynamic import from dist/ (one level up from examples/) --
-    // When served locally: expects ../dist/ to contain the built WASM files
-    // Adjust this path if you're hosting the demo separately.
-    const { jpegToJxl, jxlToJpeg, init } = await import('../dist/index.js');
+    // -- Dynamic import from dist/ --
+    // Try ./dist/ first (GitHub Pages flat layout), fall back to ../dist/ (local dev)
+    let lib;
+    try {
+      lib = await import('./dist/index.js');
+    } catch {
+      lib = await import('../dist/index.js');
+    }
+    const { jpegToJxl, jxlToJpeg, init } = lib;
 
     const $ = (sel) => document.querySelector(sel);
     const dropzone = $('#dropzone');

@@ -2,6 +2,8 @@
 
 Lossless JPEG to JPEG XL transcoding in the browser via WASM.
 
+**[Live Demo](https://chefjulio.github.io/jpeg-to-jxl/)** -- try it now, no install needed.
+
 **What it does:** Takes a JPEG file, repackages its DCT coefficients into JPEG XL format. The result is ~20% smaller, and the original JPEG can be perfectly reconstructed byte-for-byte.
 
 **How it works:** Uses libjxl's `JxlEncoderAddJPEGFrame` API compiled to WebAssembly. No pixel decoding happens -- the transcoding operates directly on the JPEG's compressed data, which is why it's both fast and perfectly reversible.
