@@ -48,9 +48,18 @@ target_link_libraries(transcode PRIVATE jxl jxl_dec jpegli-static)
 target_include_directories(transcode PRIVATE
   ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include
   ${CMAKE_BINARY_DIR}/libjxl/lib/include  # For generated jxl/version.h
-  # jpegli copies jpeglib.h from third_party/libjpeg-turbo during build
-  ${CMAKE_SOURCE_DIR}/../deps/libjxl/third_party/libjpeg-turbo
 )
+
+# Pull jpegli's include directories (jpeglib.h, jconfig.h, etc.)
+get_target_property(JPEGLI_INCLUDES jpegli-static INTERFACE_INCLUDE_DIRECTORIES)
+if(JPEGLI_INCLUDES)
+  target_include_directories(transcode PRIVATE ${JPEGLI_INCLUDES})
+else()
+  # Fallback: manually point to where jpegli puts headers
+  target_include_directories(transcode PRIVATE
+    ${CMAKE_BINARY_DIR}/libjxl/lib/include/jpegli
+  )
+endif()
 
 # --- Emscripten link flags ---
 # MODULARIZE + EXPORT_ES6: ES module factory function
