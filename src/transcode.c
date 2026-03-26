@@ -156,7 +156,7 @@ uint8_t* jxl_to_jpeg(const uint8_t* jxl_data, size_t jxl_size,
   JxlDecoderCloseInput(dec);
 
   /* Initial JPEG output buffer */
-  size_t jpeg_cap = jxl_size * 2;  /* Estimate: JPEG is ~25% larger */
+  size_t jpeg_cap = jxl_size * 2;  /* Over-estimate; grows if needed */
   uint8_t* jpeg_buf = (uint8_t*)malloc(jpeg_cap);
   if (!jpeg_buf) {
     JxlDecoderDestroy(dec);
@@ -196,7 +196,12 @@ uint8_t* jxl_to_jpeg(const uint8_t* jxl_data, size_t jxl_size,
         }
         jpeg_buf = newbuf;
         size_t remaining = jpeg_cap - jpeg_total;
-        JxlDecoderSetJPEGBuffer(dec, jpeg_buf + jpeg_total, remaining);
+        if (JXL_DEC_SUCCESS != JxlDecoderSetJPEGBuffer(dec,
+            jpeg_buf + jpeg_total, remaining)) {
+          free(jpeg_buf);
+          JxlDecoderDestroy(dec);
+          return NULL;
+        }
         break;
       }
 

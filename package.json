@@ -33,10 +33,15 @@
     "compression"
   ],
   "license": "BSD-3-Clause",
+  "author": "ChefJulio",
   "repository": {
     "type": "git",
-    "url": "https://github.com/user/jpeg-to-jxl"
+    "url": "https://github.com/ChefJulio/jpeg-to-jxl"
   },
+  "bugs": {
+    "url": "https://github.com/ChefJulio/jpeg-to-jxl/issues"
+  },
+  "homepage": "https://chefjulio.github.io/jpeg-to-jxl/",
   "engines": {
     "node": ">=18"
   }

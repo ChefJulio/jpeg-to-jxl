@@ -585,19 +585,18 @@
             Reconstruction mismatch! Original: ${jpegSize} bytes, Rebuilt: ${reconstructed.byteLength} bytes`;
         }
 
-        // -- Download links --
+        // -- Download links (revoke old URLs to avoid memory leaks) --
         const baseName = file.name.replace(/\.jpe?g$/i, '');
-
-        const jxlBlob = new Blob([jxlData], { type: 'image/jxl' });
-        const jxlUrl = URL.createObjectURL(jxlBlob);
         const dlJxl = $('#downloadJxl');
-        dlJxl.href = jxlUrl;
+        const dlJpg = $('#downloadReconstructed');
+
+        if (dlJxl.href.startsWith('blob:')) URL.revokeObjectURL(dlJxl.href);
+        if (dlJpg.href.startsWith('blob:')) URL.revokeObjectURL(dlJpg.href);
+
+        dlJxl.href = URL.createObjectURL(new Blob([jxlData], { type: 'image/jxl' }));
         dlJxl.download = baseName + '.jxl';
 
-        const jpgBlob = new Blob([reconstructed], { type: 'image/jpeg' });
-        const jpgUrl = URL.createObjectURL(jpgBlob);
-        const dlJpg = $('#downloadReconstructed');
-        dlJpg.href = jpgUrl;
+        dlJpg.href = URL.createObjectURL(new Blob([reconstructed], { type: 'image/jpeg' }));
         dlJpg.download = baseName + '-reconstructed.jpg';
 
         results.classList.add('visible');
