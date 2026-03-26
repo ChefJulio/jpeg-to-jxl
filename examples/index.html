@@ -29,26 +29,38 @@
       line-height: 1.5;
     }
 
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 48px 24px;
-    }
-
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 4px;
-    }
-
+    .container { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
     h1 span { color: var(--accent); }
+    .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 32px; }
 
-    .subtitle {
-      color: var(--text-dim);
-      font-size: 0.95rem;
-      margin-bottom: 40px;
+    /* Mode tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 4px;
+      border: 1px solid var(--border);
     }
+
+    .tab {
+      flex: 1;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-dim);
+      border: none;
+      background: none;
+    }
+
+    .tab.active { background: var(--accent); color: white; }
+    .tab:not(.active):hover { color: var(--text); background: var(--bg); }
 
     /* Drop zone */
     .dropzone {
@@ -67,20 +79,9 @@
       background: var(--accent-glow);
     }
 
-    .dropzone-icon {
-      font-size: 2.5rem;
-      margin-bottom: 12px;
-      opacity: 0.4;
-    }
-
-    .dropzone-text {
-      font-size: 1.05rem;
-      color: var(--text-dim);
-    }
-
-    .dropzone-text strong {
-      color: var(--accent);
-    }
+    .dropzone-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+    .dropzone-text { font-size: 1.05rem; color: var(--text-dim); }
+    .dropzone-text strong { color: var(--accent); }
 
     .dropzone input[type="file"] {
       position: absolute;
@@ -89,13 +90,31 @@
       cursor: pointer;
     }
 
-    /* Results */
-    .results {
-      display: none;
-      margin-top: 32px;
-      animation: fadeIn 0.3s ease;
+    /* Options row */
+    .options {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
     }
 
+    .options label { color: var(--text-dim); white-space: nowrap; }
+    .options input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+    .option-value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* Results */
+    .results { display: none; margin-top: 32px; animation: fadeIn 0.3s ease; }
     .results.visible { display: block; }
 
     @keyframes fadeIn {
@@ -119,18 +138,10 @@
       margin-bottom: 16px;
     }
 
-    /* Size comparison bar */
-    .size-compare {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    /* Size bars */
+    .size-compare { display: flex; flex-direction: column; gap: 10px; }
 
-    .size-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .size-row { display: flex; align-items: center; gap: 12px; }
 
     .size-label {
       width: 48px;
@@ -147,7 +158,6 @@
       background: var(--bg);
       border-radius: 6px;
       overflow: hidden;
-      position: relative;
     }
 
     .size-bar {
@@ -163,13 +173,12 @@
       white-space: nowrap;
     }
 
-    .size-bar.jpeg { background: var(--text-dim); width: 100%; }
-    .size-bar.jxl { background: var(--accent); }
+    .size-bar.input-bar { background: var(--text-dim); width: 100%; }
+    .size-bar.output-bar { background: var(--accent); }
 
     .savings-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
       background: var(--green-dim);
       color: var(--green);
       font-size: 0.85rem;
@@ -179,35 +188,15 @@
       margin-top: 12px;
     }
 
-    /* Stats grid */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 16px;
-    }
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
 
-    .stat {
-      text-align: center;
-      padding: 12px 8px;
-      background: var(--bg);
-      border-radius: 8px;
-    }
+    .stat { text-align: center; padding: 12px 8px; background: var(--bg); border-radius: 8px; }
+    .stat-value { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .stat-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
 
-    .stat-value {
-      font-size: 1.3rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-top: 2px;
-    }
-
-    /* Round-trip verification */
-    .verify {
+    /* Info badge */
+    .info-badge {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -217,27 +206,20 @@
       font-weight: 500;
     }
 
-    .verify.success {
+    .info-badge.success {
       background: var(--green-dim);
       color: var(--green);
       border: 1px solid rgba(34, 197, 94, 0.2);
     }
 
-    .verify.fail {
-      background: rgba(239, 68, 68, 0.1);
-      color: var(--red);
-      border: 1px solid rgba(239, 68, 68, 0.2);
+    .info-badge.neutral {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(99, 102, 241, 0.2);
     }
-
-    .verify-icon { font-size: 1.2rem; }
 
     /* Actions */
-    .actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
+    .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 
     .btn {
       display: inline-flex;
@@ -253,34 +235,17 @@
       text-decoration: none;
     }
 
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
+    .btn-primary { background: var(--accent); color: white; }
     .btn-primary:hover { filter: brightness(1.15); }
-
-    .btn-outline {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
     .btn-outline:hover { border-color: var(--text-dim); background: var(--surface); }
 
-    /* Status/spinner */
-    .status {
-      text-align: center;
-      padding: 24px;
-      color: var(--text-dim);
-      display: none;
-    }
-
+    /* Status */
+    .status { text-align: center; padding: 24px; color: var(--text-dim); display: none; }
     .status.visible { display: block; }
 
     .spinner {
-      width: 24px;
-      height: 24px;
+      width: 24px; height: 24px;
       border: 3px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -290,7 +255,6 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Error */
     .error {
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.2);
@@ -304,7 +268,6 @@
 
     .error.visible { display: block; }
 
-    /* Footer */
     .footer {
       margin-top: 48px;
       padding-top: 24px;
@@ -316,59 +279,36 @@
 
     .footer a { color: var(--accent); text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
-
-    /* Effort control */
-    .effort-control {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 16px;
-      padding: 12px 16px;
-      background: var(--bg);
-      border-radius: 8px;
-      font-size: 0.85rem;
-    }
-
-    .effort-control label {
-      color: var(--text-dim);
-      white-space: nowrap;
-    }
-
-    .effort-control input[type="range"] {
-      flex: 1;
-      accent-color: var(--accent);
-    }
-
-    .effort-value {
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      min-width: 16px;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1><span>jpeg-to-jxl</span> demo</h1>
-    <p class="subtitle">
-      Lossless JPEG to JPEG XL transcoding in the browser. ~20% smaller, byte-perfect reconstruction.
-    </p>
+    <p class="subtitle">JPEG &lt;-&gt; JPEG XL transcoding in the browser via WebAssembly.</p>
+
+    <div class="tabs">
+      <button class="tab active" data-mode="jpeg-to-jxl">JPEG &rarr; JXL</button>
+      <button class="tab" data-mode="jxl-to-jpeg">JXL &rarr; JPEG</button>
+    </div>
 
     <div class="dropzone" id="dropzone">
       <div class="dropzone-icon">&#x1F5BC;</div>
-      <div class="dropzone-text">
+      <div class="dropzone-text" id="dropzoneText">
         <strong>Drop a JPEG</strong> or click to select
       </div>
-      <input type="file" accept=".jpg,.jpeg,image/jpeg" id="fileInput">
+      <input type="file" id="fileInput">
     </div>
 
-    <div class="effort-control">
+    <div class="options" id="optEffort">
       <label for="effort">Effort:</label>
       <input type="range" id="effort" min="1" max="9" value="3">
-      <span class="effort-value" id="effortValue">3</span>
-      <span style="color: var(--text-dim)">
-        <span id="effortHint">balanced</span>
-      </span>
+      <span class="option-value" id="effortValue">3</span>
+    </div>
+
+    <div class="options" id="optQuality" style="display: none;">
+      <label for="quality">Quality:</label>
+      <input type="range" id="quality" min="1" max="100" value="90">
+      <span class="option-value" id="qualityValue">90</span>
     </div>
 
     <div class="status" id="status">
@@ -380,18 +320,18 @@
 
     <div class="results" id="results">
       <div class="card">
-        <div class="card-title">Compression</div>
+        <div class="card-title" id="resultTitle">Compression</div>
         <div class="size-compare">
           <div class="size-row">
-            <span class="size-label">JPEG</span>
+            <span class="size-label" id="inputLabel">JPEG</span>
             <div class="size-bar-track">
-              <div class="size-bar jpeg" id="jpegBar"></div>
+              <div class="size-bar input-bar" id="inputBar"></div>
             </div>
           </div>
           <div class="size-row">
-            <span class="size-label">JXL</span>
+            <span class="size-label" id="outputLabel">JXL</span>
             <div class="size-bar-track">
-              <div class="size-bar jxl" id="jxlBar"></div>
+              <div class="size-bar output-bar" id="outputBar"></div>
             </div>
           </div>
         </div>
@@ -400,12 +340,12 @@
 
       <div class="stats">
         <div class="stat">
-          <div class="stat-value" id="statOriginal">--</div>
-          <div class="stat-label">Original</div>
+          <div class="stat-value" id="statInput">--</div>
+          <div class="stat-label" id="statInputLabel">Input</div>
         </div>
         <div class="stat">
-          <div class="stat-value" id="statCompressed">--</div>
-          <div class="stat-label">JXL</div>
+          <div class="stat-value" id="statOutput">--</div>
+          <div class="stat-label" id="statOutputLabel">Output</div>
         </div>
         <div class="stat">
           <div class="stat-value" id="statTime">--</div>
@@ -414,13 +354,12 @@
       </div>
 
       <div class="card" style="margin-top: 16px">
-        <div class="card-title">Round-trip verification</div>
-        <div id="verifyResult"></div>
+        <div class="card-title" id="infoTitle">Info</div>
+        <div id="infoResult"></div>
       </div>
 
       <div class="actions">
-        <a class="btn btn-primary" id="downloadJxl">Download .jxl</a>
-        <a class="btn btn-outline" id="downloadReconstructed">Download reconstructed .jpg</a>
+        <a class="btn btn-primary" id="downloadBtn">Download</a>
         <button class="btn btn-outline" id="resetBtn">Try another</button>
       </div>
     </div>
@@ -432,64 +371,56 @@
   </div>
 
   <script type="module">
-    // -- Dynamic import from dist/ --
-    // Try ./dist/ first (GitHub Pages flat layout), fall back to ../dist/ (local dev)
     let lib;
-    try {
-      lib = await import('./dist/index.js');
-    } catch {
-      lib = await import('../dist/index.js');
-    }
+    try { lib = await import('./dist/index.js'); }
+    catch { lib = await import('../dist/index.js'); }
     const { jpegToJxl, jxlToJpeg, init } = lib;
 
     const $ = (sel) => document.querySelector(sel);
+    let mode = 'jpeg-to-jxl';
+
+    // -- Mode tabs --
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        mode = tab.dataset.mode;
+
+        const isJxlToJpeg = mode === 'jxl-to-jpeg';
+        $('#dropzoneText').innerHTML = isJxlToJpeg
+          ? '<strong>Drop a JXL</strong> or click to select'
+          : '<strong>Drop a JPEG</strong> or click to select';
+        $('#fileInput').accept = isJxlToJpeg ? '.jxl,image/jxl' : '.jpg,.jpeg,image/jpeg';
+        $('#optEffort').style.display = isJxlToJpeg ? 'none' : '';
+        $('#optQuality').style.display = isJxlToJpeg ? '' : 'none';
+
+        // Reset state
+        $('#results').classList.remove('visible');
+        $('#error').classList.remove('visible');
+        $('#dropzone').style.display = '';
+        $('#fileInput').value = '';
+      });
+    });
+
+    // -- Sliders --
+    $('#effort').addEventListener('input', (e) => { $('#effortValue').textContent = e.target.value; });
+    $('#quality').addEventListener('input', (e) => { $('#qualityValue').textContent = e.target.value; });
+
+    // -- Drop zone --
     const dropzone = $('#dropzone');
-    const fileInput = $('#fileInput');
-    const effortSlider = $('#effort');
-    const effortValue = $('#effortValue');
-    const effortHint = $('#effortHint');
-    const status = $('#status');
-    const statusText = $('#statusText');
-    const error = $('#error');
-    const results = $('#results');
-
-    const EFFORT_HINTS = {
-      1: 'fastest', 2: 'fast', 3: 'balanced', 4: 'balanced',
-      5: 'thorough', 6: 'thorough', 7: 'slow', 8: 'slower', 9: 'max compression'
-    };
-
-    // -- Effort slider --
-    effortSlider.addEventListener('input', () => {
-      effortValue.textContent = effortSlider.value;
-      effortHint.textContent = EFFORT_HINTS[effortSlider.value];
-    });
-
-    // -- Drag and drop --
-    dropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
-    });
-
-    dropzone.addEventListener('dragleave', () => {
-      dropzone.classList.remove('dragover');
-    });
-
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropzone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
     });
-
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) handleFile(fileInput.files[0]);
-    });
-
+    $('#fileInput').addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); });
     $('#resetBtn').addEventListener('click', () => {
-      results.classList.remove('visible');
-      error.classList.remove('visible');
+      $('#results').classList.remove('visible');
+      $('#error').classList.remove('visible');
       dropzone.style.display = '';
-      fileInput.value = '';
+      $('#fileInput').value = '';
     });
 
     function formatBytes(bytes) {
@@ -498,113 +429,141 @@
       return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
 
-    function showStatus(msg) {
-      status.classList.add('visible');
-      statusText.textContent = msg;
-    }
-
-    function hideStatus() {
-      status.classList.remove('visible');
-    }
-
-    function showError(msg) {
-      error.textContent = msg;
-      error.classList.add('visible');
-      hideStatus();
-    }
+    function showStatus(msg) { $('#status').classList.add('visible'); $('#statusText').textContent = msg; }
+    function hideStatus() { $('#status').classList.remove('visible'); }
+    function showError(msg) { $('#error').textContent = msg; $('#error').classList.add('visible'); hideStatus(); }
 
     async function handleFile(file) {
-      if (!file.type.match(/^image\/jpe?g$/)) {
-        showError('Please select a JPEG file.');
-        return;
-      }
-
-      error.classList.remove('visible');
-      results.classList.remove('visible');
+      $('#error').classList.remove('visible');
+      $('#results').classList.remove('visible');
       dropzone.style.display = 'none';
-
-      const effort = parseInt(effortSlider.value);
 
       try {
         showStatus('Initializing WASM module...');
         await init();
 
         showStatus('Reading file...');
-        const jpegData = await file.arrayBuffer();
+        const inputData = await file.arrayBuffer();
 
-        showStatus('Transcoding JPEG to JXL...');
-        const t0 = performance.now();
-        const jxlData = await jpegToJxl(jpegData, { effort });
-        const encodeTime = performance.now() - t0;
-
-        showStatus('Reconstructing JPEG from JXL...');
-        const t1 = performance.now();
-        const reconstructed = await jxlToJpeg(jxlData);
-        const decodeTime = performance.now() - t1;
-
-        hideStatus();
-
-        // -- Populate results --
-        const jpegSize = jpegData.byteLength;
-        const jxlSize = jxlData.byteLength;
-        const savings = ((1 - jxlSize / jpegSize) * 100).toFixed(1);
-        const ratio = (jxlSize / jpegSize * 100).toFixed(0);
-
-        $('#jpegBar').style.width = '100%';
-        $('#jpegBar').textContent = formatBytes(jpegSize);
-        $('#jxlBar').style.width = ratio + '%';
-        $('#jxlBar').textContent = formatBytes(jxlSize);
-
-        $('#savingsBadge').textContent = savings + '% smaller';
-
-        $('#statOriginal').textContent = formatBytes(jpegSize);
-        $('#statCompressed').textContent = formatBytes(jxlSize);
-        $('#statTime').textContent = Math.round(encodeTime) + 'ms';
-
-        // -- Verify round-trip --
-        const originalBytes = new Uint8Array(jpegData);
-        const rebuiltBytes = new Uint8Array(reconstructed);
-        let identical = originalBytes.length === rebuiltBytes.length;
-        if (identical) {
-          for (let i = 0; i < originalBytes.length; i++) {
-            if (originalBytes[i] !== rebuiltBytes[i]) {
-              identical = false;
-              break;
-            }
-          }
-        }
-
-        const verifyEl = $('#verifyResult');
-        if (identical) {
-          verifyEl.className = 'verify success';
-          verifyEl.innerHTML = `<span class="verify-icon">&#x2713;</span>
-            Byte-identical reconstruction verified (${formatBytes(reconstructed.byteLength)}, ${Math.round(decodeTime)}ms)`;
+        if (mode === 'jpeg-to-jxl') {
+          await handleJpegToJxl(inputData, file.name);
         } else {
-          verifyEl.className = 'verify fail';
-          verifyEl.innerHTML = `<span class="verify-icon">&#x2717;</span>
-            Reconstruction mismatch! Original: ${jpegSize} bytes, Rebuilt: ${reconstructed.byteLength} bytes`;
+          await handleJxlToJpeg(inputData, file.name);
         }
-
-        // -- Download links (revoke old URLs to avoid memory leaks) --
-        const baseName = file.name.replace(/\.jpe?g$/i, '');
-        const dlJxl = $('#downloadJxl');
-        const dlJpg = $('#downloadReconstructed');
-
-        if (dlJxl.href.startsWith('blob:')) URL.revokeObjectURL(dlJxl.href);
-        if (dlJpg.href.startsWith('blob:')) URL.revokeObjectURL(dlJpg.href);
-
-        dlJxl.href = URL.createObjectURL(new Blob([jxlData], { type: 'image/jxl' }));
-        dlJxl.download = baseName + '.jxl';
-
-        dlJpg.href = URL.createObjectURL(new Blob([reconstructed], { type: 'image/jpeg' }));
-        dlJpg.download = baseName + '-reconstructed.jpg';
-
-        results.classList.add('visible');
-
       } catch (err) {
-        showError(err.message || 'Transcoding failed.');
+        showError(err.message || 'Conversion failed.');
         dropzone.style.display = '';
       }
+    }
+
+    async function handleJpegToJxl(jpegData, fileName) {
+      const effort = parseInt($('#effort').value);
+
+      showStatus('Transcoding JPEG to JXL...');
+      const t0 = performance.now();
+      const jxlData = await jpegToJxl(jpegData, { effort });
+      const elapsed = performance.now() - t0;
+
+      hideStatus();
+
+      const inSize = jpegData.byteLength;
+      const outSize = jxlData.byteLength;
+      const savings = ((1 - outSize / inSize) * 100).toFixed(1);
+      const ratio = (outSize / inSize * 100).toFixed(0);
+
+      $('#resultTitle').textContent = 'Compression';
+      $('#inputLabel').textContent = 'JPEG';
+      $('#outputLabel').textContent = 'JXL';
+      $('#inputBar').style.width = '100%';
+      $('#inputBar').textContent = formatBytes(inSize);
+      $('#outputBar').style.width = ratio + '%';
+      $('#outputBar').textContent = formatBytes(outSize);
+      $('#savingsBadge').textContent = savings + '% smaller';
+      $('#savingsBadge').style.display = '';
+
+      $('#statInput').textContent = formatBytes(inSize);
+      $('#statInputLabel').textContent = 'JPEG';
+      $('#statOutput').textContent = formatBytes(outSize);
+      $('#statOutputLabel').textContent = 'JXL';
+      $('#statTime').textContent = Math.round(elapsed) + 'ms';
+
+      $('#infoTitle').textContent = 'Round-trip verification';
+      showStatus('Verifying round-trip...');
+      const reconstructed = await jxlToJpeg(jxlData);
+      hideStatus();
+
+      const orig = new Uint8Array(jpegData);
+      const rebuilt = new Uint8Array(reconstructed);
+      let identical = orig.length === rebuilt.length;
+      if (identical) {
+        for (let i = 0; i < orig.length; i++) {
+          if (orig[i] !== rebuilt[i]) { identical = false; break; }
+        }
+      }
+
+      const info = $('#infoResult');
+      if (identical) {
+        info.className = 'info-badge success';
+        info.innerHTML = `<span>&#x2713;</span> Byte-identical JPEG reconstruction verified`;
+      } else {
+        info.className = 'info-badge neutral';
+        info.innerHTML = `<span>&#x2139;</span> Reconstruction size: ${formatBytes(reconstructed.byteLength)}`;
+      }
+
+      const baseName = fileName.replace(/\.jpe?g$/i, '');
+      setupDownload(jxlData, 'image/jxl', baseName + '.jxl', 'Download .jxl');
+      $('#results').classList.add('visible');
+    }
+
+    async function handleJxlToJpeg(jxlData, fileName) {
+      const quality = parseInt($('#quality').value);
+
+      showStatus('Converting JXL to JPEG...');
+      const t0 = performance.now();
+      const jpegData = await jxlToJpeg(jxlData, { quality });
+      const elapsed = performance.now() - t0;
+
+      hideStatus();
+
+      const inSize = jxlData.byteLength;
+      const outSize = jpegData.byteLength;
+
+      // For JXL->JPEG the output is typically larger, so swap bar logic
+      const maxSize = Math.max(inSize, outSize);
+      const inRatio = (inSize / maxSize * 100).toFixed(0);
+      const outRatio = (outSize / maxSize * 100).toFixed(0);
+
+      $('#resultTitle').textContent = 'Conversion';
+      $('#inputLabel').textContent = 'JXL';
+      $('#outputLabel').textContent = 'JPEG';
+      $('#inputBar').style.width = inRatio + '%';
+      $('#inputBar').textContent = formatBytes(inSize);
+      $('#outputBar').style.width = outRatio + '%';
+      $('#outputBar').textContent = formatBytes(outSize);
+      $('#savingsBadge').style.display = 'none';
+
+      $('#statInput').textContent = formatBytes(inSize);
+      $('#statInputLabel').textContent = 'JXL';
+      $('#statOutput').textContent = formatBytes(outSize);
+      $('#statOutputLabel').textContent = 'JPEG';
+      $('#statTime').textContent = Math.round(elapsed) + 'ms';
+
+      $('#infoTitle').textContent = 'Conversion details';
+      const info = $('#infoResult');
+      info.className = 'info-badge neutral';
+      info.innerHTML = `<span>&#x2139;</span> Decoded JXL to pixels, re-encoded as JPEG at quality ${quality}`;
+
+      const baseName = fileName.replace(/\.jxl$/i, '');
+      setupDownload(jpegData, 'image/jpeg', baseName + '.jpg', 'Download .jpg');
+      $('#results').classList.add('visible');
+    }
+
+    function setupDownload(data, mimeType, filename, label) {
+      const dl = $('#downloadBtn');
+      if (dl.href && dl.href.startsWith('blob:')) URL.revokeObjectURL(dl.href);
+      dl.href = URL.createObjectURL(new Blob([data], { type: mimeType }));
+      dl.download = filename;
+      dl.textContent = label;
     }
   </script>
 </body>
