@@ -43,23 +43,21 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 # --- Our WASM glue ---
 add_executable(transcode ${CMAKE_SOURCE_DIR}/../src/transcode.c)
 
+# Print available jpegli targets for debugging (remove after confirmed working)
+message(STATUS "Looking for jpegli targets...")
+foreach(target_name jpegli-static jpegli jpegli_static jpeg-static jpeg)
+  if(TARGET ${target_name})
+    message(STATUS "  Found target: ${target_name}")
+  endif()
+endforeach()
+
 target_link_libraries(transcode PRIVATE jxl jxl_dec jpegli-static)
 
 target_include_directories(transcode PRIVATE
   ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include
   ${CMAKE_BINARY_DIR}/libjxl/lib/include  # For generated jxl/version.h
+  ${CMAKE_BINARY_DIR}/libjxl/lib/include/jpegli  # jpeglib.h, jconfig.h, jmorecfg.h
 )
-
-# Pull jpegli's include directories (jpeglib.h, jconfig.h, etc.)
-get_target_property(JPEGLI_INCLUDES jpegli-static INTERFACE_INCLUDE_DIRECTORIES)
-if(JPEGLI_INCLUDES)
-  target_include_directories(transcode PRIVATE ${JPEGLI_INCLUDES})
-else()
-  # Fallback: manually point to where jpegli puts headers
-  target_include_directories(transcode PRIVATE
-    ${CMAKE_BINARY_DIR}/libjxl/lib/include/jpegli
-  )
-endif()
 
 # --- Emscripten link flags ---
 # MODULARIZE + EXPORT_ES6: ES module factory function
