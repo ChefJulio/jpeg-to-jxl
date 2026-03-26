@@ -51,8 +51,26 @@ jobs:
 
       - name: Create test fixture
         run: |
-          # Generate a minimal test JPEG using ImageMagick (pre-installed on ubuntu-latest)
-          convert -size 64x64 xc:red -quality 90 test/fixtures/sample.jpg
+          python3 -c "
+          import struct, zlib
+          # Minimal valid JPEG: 2x2 red pixels
+          # Using a raw JFIF-encoded JPEG via Python's built-in capabilities
+          from io import BytesIO
+          # Fallback: write a minimal valid JPEG by hand (SOI + APP0 + DQT + SOF0 + DHT + SOS + EOI)
+          # Simpler: use PIL if available, else download a tiny sample
+          try:
+              from PIL import Image
+              img = Image.new('RGB', (64, 64), (255, 0, 0))
+              img.save('test/fixtures/sample.jpg', 'JPEG', quality=90)
+              print('Created test JPEG via Pillow')
+          except ImportError:
+              import urllib.request
+              # Use a known tiny JPEG from the web
+              urllib.request.urlretrieve(
+                  'https://www.w3.org/MarkUp/Test/xhtml-print/20050519/tests/jpeg420exif.jpg',
+                  'test/fixtures/sample.jpg')
+              print('Downloaded test JPEG from W3C')
+          "
 
       - name: Run tests
         run: node --test test/round-trip.test.js
