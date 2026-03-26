@@ -40,25 +40,17 @@ set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl ${CMAKE_BINARY_DIR}/libjxl)
 
-# --- libjpeg-turbo for JPEG encoding (used by jxl_to_jpeg_lossy) ---
-set(ENABLE_SHARED OFF CACHE BOOL "" FORCE)
-set(ENABLE_STATIC ON CACHE BOOL "" FORCE)
-set(WITH_TURBOJPEG OFF CACHE BOOL "" FORCE)
-set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS "" CACHE STRING "" FORCE)
-add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libjxl/third_party/libjpeg-turbo
-                 ${CMAKE_BINARY_DIR}/libjpeg-turbo EXCLUDE_FROM_ALL)
-
 # --- Our WASM glue ---
 add_executable(transcode ${CMAKE_SOURCE_DIR}/../src/transcode.c)
 
-target_link_libraries(transcode PRIVATE jxl jxl_dec jpeg-static)
+# libjpeg for JPEG encoding: Emscripten's built-in port provides jpeglib.h
+target_compile_options(transcode PRIVATE "SHELL:-s USE_LIBJPEG=1")
+
+target_link_libraries(transcode PRIVATE jxl jxl_dec)
 
 target_include_directories(transcode PRIVATE
   ${CMAKE_SOURCE_DIR}/../deps/libjxl/lib/include
   ${CMAKE_BINARY_DIR}/libjxl/lib/include  # For generated jxl/version.h
-  # libjpeg-turbo headers (jpeglib.h from source, jconfig.h generated in build dir)
-  ${CMAKE_SOURCE_DIR}/../deps/libjxl/third_party/libjpeg-turbo
-  ${CMAKE_BINARY_DIR}/libjpeg-turbo
 )
 
 # --- Emscripten link flags ---
@@ -85,6 +77,7 @@ set_target_properties(transcode PROPERTIES
     -s SINGLE_FILE=0 \
     -s MALLOC=emmalloc \
     -s USE_PTHREADS=0 \
+    -s USE_LIBJPEG=1 \
     -Oz \
     --closure 1 \
   "
