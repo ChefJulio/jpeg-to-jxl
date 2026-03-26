@@ -11,7 +11,7 @@ A standalone npm package that provides **lossless JPEG-to-JXL transcoding** via 
 
 ## Current State (2026-03-26)
 
-### What's Done
+### What's Done (Phase 1 COMPLETE)
 
 - [x] Project scaffolded with full source code
 - [x] `src/transcode.c` -- C glue around `JxlEncoderAddJPEGFrame` (encode) and `JxlDecoderSetJPEGBuffer` (decode/reconstruct)
@@ -21,87 +21,75 @@ A standalone npm package that provides **lossless JPEG-to-JXL transcoding** via 
 - [x] `build/build.sh` -- One-command build script with prereq validation
 - [x] `.github/workflows/build.yml` -- GitHub Actions CI (Emscripten setup, libjxl clone, build, test, artifact upload)
 - [x] `test/round-trip.test.js` -- Node.js test suite (compression ratio, byte-identical reconstruction, error cases)
-- [x] Git repo created and pushed, CI triggered
+- [x] Git repo created, CI fully green, all 6 tests passing
+- [x] WASM builds successfully: **2.7 MB raw, 1.0 MB gzipped**
+- [x] Verified compression: **92,436 byte JPEG -> 73,001 byte JXL (21.0% smaller)**
+- [x] Verified byte-identical JPEG reconstruction
+- [x] Verified effort parameter works: effort=1 -> 80,754 bytes, effort=9 -> 72,484 bytes
+- [x] WASM artifact uploaded to GitHub Actions for download
 
-### What's NOT Done
+### Build details
 
-- [ ] **CI build needs to pass** -- First run was triggered. libjxl is a large C++ project with dependencies (highway, brotli, etc.). The CMake config may need iteration to get the Emscripten cross-compile working cleanly. This is the biggest unknown.
-- [ ] **Test fixture** -- CI generates a test JPEG via ImageMagick. May want to also commit a small real-world JPEG for local testing.
-- [ ] **WASM size optimization** -- Initial build may be large. May need to strip unused libjxl code paths, use `-Oz` instead of `-O3`, or investigate `wasm-opt`.
-- [ ] **Browser testing** -- Tests currently run in Node.js. Need to verify WASM loads and runs correctly in browsers (Chrome, Firefox, Safari).
-- [ ] **npm publish** -- Once build passes and tests are green, publish to npm.
-- [ ] **Integration into Overtooled** -- Add a "Lossless JPEG Recompression" feature to Overtooled's Image Converter using this package.
+- Emscripten SDK 3.1.51
+- libjxl built as CMake subdirectory with highway, brotli dependencies
+- `ENVIRONMENT='web,worker,node'` -- works in browser, Web Worker, and Node.js
+- `FILESYSTEM=0`, `ALLOW_MEMORY_GROWTH=1`, `-O3`, `--closure 1`
+- Node.js WASM loading uses `import.meta.url` with file:// URL-to-path conversion
+- Test fixture: 512x512 gradient+noise JPEG generated via Pillow in CI
 
----
+### Issues encountered and resolved
 
-## Phase 1: Get CI Green
-
-**Priority: This is the critical path. Everything else is blocked on a working WASM build.**
-
-### Likely issues and fixes
-
-1. **libjxl submodule dependencies** -- libjxl uses git submodules for highway, brotli, etc. The CI clones with `--recursive` but the CMake may need hints to find them. Check if `deps/libjxl/third_party/` populated correctly.
-
-2. **CMake variable conflicts** -- libjxl's CMakeLists.txt defines many cache variables. Our overrides in `build/CMakeLists.txt` (lines like `set(BUILD_TESTING OFF CACHE BOOL "" FORCE)`) should suppress most, but new libjxl versions may add new required options.
-
-3. **Emscripten-specific issues:**
-   - libjxl uses highway SIMD -- Emscripten supports WASM SIMD but it may need explicit flags (`-msimd128`)
-   - Threading: we're building single-threaded (no `-pthread`). If libjxl's CMake tries to enable threads, force it off: `set(JPEGXL_FORCE_NEON OFF)`, `set(CMAKE_DISABLE_FIND_PACKAGE_Threads TRUE)`
-   - Some libjxl code uses `mmap` or filesystem APIs that don't exist in Emscripten. The `FILESYSTEM=0` flag should handle this but may cause link errors if libjxl code references them.
-
-4. **Link order** -- `target_link_libraries(transcode PRIVATE jxl jxl_dec)` may need additional libraries like `hwy`, `brotlienc`, `brotlidec`, `brotlicommon` depending on how libjxl's CMake exports its targets.
-
-5. **Emscripten version** -- CI uses emsdk 3.1.51. If libjxl requires newer features, bump the version in `build.yml`.
-
-### Debugging approach
-
-- Check the CI logs carefully for the first failure
-- If CMake config fails: look at which target/variable is missing
-- If compile fails: check if it's a libjxl source file or our transcode.c
-- If link fails: likely missing library in target_link_libraries
-- The libjxl repo has `doc/building_wasm.md` -- cross-reference their approach
-
-### If the subdirectory approach doesn't work
-
-Fall back to a two-stage build:
-1. Build libjxl as a standalone Emscripten project first (using their own CMake)
-2. Link our transcode.c against the resulting static libraries
-
-This is less elegant but more likely to work since it uses libjxl's own tested build path.
+1. **ImageMagick not on ubuntu-latest** -- Switched to Pillow via `pip install`
+2. **`test/fixtures/` directory missing in checkout** -- Added `mkdir -p` in CI
+3. **Node.js WASM file resolution** -- `locateFile` was returning a URL string; Node.js needs a file path. Fixed by detecting `file://` protocol and converting.
+4. **Emscripten ENVIRONMENT flag** -- Initially set to `'web,worker'` which excluded Node.js. Added `'node'` for test compatibility.
+5. **Tiny test JPEG larger after transcoding** -- 64x64 solid-color JPEG (694 bytes) had less data than JXL container overhead. Switched to 512x512 gradient+noise image (92KB) which shows the expected ~21% savings.
 
 ---
 
-## Phase 2: Optimize
+## Phase 2: Optimize (NEXT)
 
-Once the build passes:
+The build works but there's room to improve:
 
-1. **Measure WASM size** -- Check artifact size. Target: under 1MB gzipped. If larger:
-   - Use `-Oz` instead of `-O3` for size optimization
-   - Run `wasm-opt -Oz` on the output
-   - Check if we're pulling in unused libjxl code (e.g., the full pixel encoder)
-   - Consider building only the JPEG transcoding subset
+1. **WASM size** -- Currently 2.7 MB raw / 1.0 MB gzipped. Target: under 800KB gzipped.
+   - Try `-Oz` instead of `-O3` (prioritize size over speed)
+   - Run `wasm-opt -Oz` on the output (binaryen optimizer)
+   - Investigate if we're pulling in unused libjxl code (full pixel encoder vs. just JPEG transcode path)
+   - The `ALLOW_MEMORY_GROWTH=1` flag currently combined with `INITIAL_MEMORY=16777216` (16MB). Could reduce initial memory.
 
-2. **Benchmark** -- Measure transcoding speed in browser for various JPEG sizes (100KB, 1MB, 10MB). Should be fast since no pixel processing.
+2. **Threading overhead** -- The generated Emscripten glue has pthread/SharedArrayBuffer code even though we don't use threads in our code. This is because libjxl/highway may be requesting threads at build time. Consider:
+   - Adding `-s USE_PTHREADS=0` or `-pthread` exclusion flags
+   - Setting `set(HWY_ENABLE_THREADS OFF)` in CMake
+   - This would also shrink the JS glue file
 
-3. **Memory usage** -- Check peak WASM memory for large JPEGs. The `ALLOW_MEMORY_GROWTH` flag handles this but verify it doesn't OOM on 20MB+ JPEGs.
+3. **Benchmark** -- Measure transcoding speed in browser for various JPEG sizes (100KB, 1MB, 10MB). Should be fast since no pixel processing.
+
+4. **Memory usage** -- Check peak WASM memory for large JPEGs. Verify it doesn't OOM on 20MB+ JPEGs.
 
 ---
 
 ## Phase 3: Browser Testing & Polish
 
-1. **Create a minimal HTML test page** that loads the WASM and transcodes a JPEG
+1. **Create a minimal HTML test page** (`examples/index.html`) that:
+   - Loads the WASM module
+   - Lets user drop/select a JPEG
+   - Shows original size, JXL size, savings percentage
+   - Offers download of the JXL
+   - Reconstructs the JPEG and verifies byte-identity
 2. **Test in browsers:** Chrome, Firefox, Safari, Edge
 3. **Verify the `locateFile` callback** works correctly for different bundler setups (Vite, Webpack, bare `<script>`)
-4. **Add a browser example** to the repo
+4. **CORS / COOP / COEP headers** -- If the WASM build has SharedArrayBuffer references (from highway threading), browsers may require specific headers. Test and document.
 
 ---
 
 ## Phase 4: npm Publish
 
-1. Update `package.json` repository URL to final GitHub URL
-2. Ensure `dist/` contains all needed files (index.js, index.d.ts, transcode.js, transcode.wasm)
-3. `npm publish`
-4. Verify installation works: `npm install jpeg-to-jxl` in a fresh project
+1. Download the `dist/` artifact from CI (or set up CI to auto-publish on tag)
+2. Ensure `dist/` contains all needed files: `index.js`, `index.d.ts`, `transcode.js`, `transcode.wasm`
+3. Update `package.json` repository URL (already set to `https://github.com/ChefJulio/jpeg-to-jxl`)
+4. `npm publish`
+5. Verify installation works: `npm install jpeg-to-jxl` in a fresh project
+6. Consider adding a `postinstall` or `prepublishOnly` script note about the WASM file needing to be served alongside the JS
 
 ---
 
@@ -131,9 +119,10 @@ Once published to npm:
 | Separate repo from Overtooled | Different build toolchain (Emscripten/C++ vs Vite/React). Reusable by anyone. |
 | Single-threaded WASM | Simpler, no SharedArrayBuffer/COOP/COEP requirements. Transcoding is fast enough single-threaded since no pixel processing. |
 | `FILESYSTEM=0` | We pass byte buffers directly, no need for Emscripten's virtual filesystem. Saves WASM size. |
-| `ENVIRONMENT='web,worker'` | Works in main thread and Web Workers. No Node.js FS support needed. |
+| `ENVIRONMENT='web,worker,node'` | Works in main thread, Web Workers, and Node.js (needed for tests). |
 | Effort default = 3 | Good speed/size tradeoff for interactive use. User can increase for archival. |
-| libjxl as subdirectory build | Single CMake invocation. Alternative: pre-build libjxl separately. |
+| libjxl as subdirectory build | Single CMake invocation. Worked on first try with Emscripten. |
+| CI-built WASM | Avoids requiring Emscripten locally. Push code, CI builds, download artifact. |
 
 ---
 
